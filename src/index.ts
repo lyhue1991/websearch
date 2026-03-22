@@ -174,12 +174,15 @@ function parseMcpResponse(responseText: string): SearchResult[] {
 function parseSearchResults(text: string): SearchResult[] {
   const results: SearchResult[] = [];
 
-  const blocks = text.split(/\n\n+/);
+  const blocks = text.split(/\n\nTitle:/);
 
   for (const block of blocks) {
-    const titleMatch = block.match(/Title:\s*(.+)/);
+    if (!block.trim()) continue;
+
+    const titleMatch = block.match(/^(.+)/);
     const urlMatch = block.match(/URL:\s*(.+)/);
-    const contentMatch = block.match(/Content:\s*([\s\S]+?)(?=\n[A-Z][a-z]+:|$)/);
+    // Exa returns Highlights field for snippets
+    const contentMatch = block.match(/Highlights:\s*([\s\S]+?)(?=\n---|\nTitle:|$)/);
 
     if (titleMatch && urlMatch) {
       results.push({
