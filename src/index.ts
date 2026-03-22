@@ -194,7 +194,46 @@ function parseSearchResults(text: string): SearchResult[] {
 }
 
 function formatResults(results: SearchResult[], format: OutputFormat): string {
-  return JSON.stringify(results, null, 2);
+  if (format === 'json') {
+    return JSON.stringify(results, null, 2);
+  }
+
+  if (results.length === 0) {
+    return '未找到相关结果。';
+  }
+
+  if (format === 'markdown') {
+    return results
+      .map((result, index) => {
+        const lines = [`## ${index + 1}. ${result.title}`, `[${result.url}](${result.url})`];
+        if (result.snippet) {
+          lines.push(result.snippet);
+        }
+        return lines.join('\n');
+      })
+      .join('\n\n');
+  }
+
+  // table format
+  const table = new Table({
+    head: ['标题', 'URL', '摘要'],
+    wordWrap: true,
+    colWidths: [30, 40, 50]
+  });
+
+  for (const result of results) {
+    const snippet = result.snippet
+      ? result.snippet.length > 50
+        ? result.snippet.substring(0, 50) + '...'
+        : result.snippet
+      : '';
+    const title = result.title.length > 28
+      ? result.title.substring(0, 28) + '...'
+      : result.title;
+    table.push([title, result.url, snippet]);
+  }
+
+  return table.toString();
 }
 
 run(process.argv);
