@@ -27,6 +27,7 @@ websearch <query> [options]
 | `--count` | `-c` | number | 8 | 结果数量 (1-20) |
 | `--format` | `-f` | string | json | 输出格式: json / markdown / table |
 | `--type` | `-t` | string | auto | 搜索类型: auto / fast / deep |
+| `--insecure` | `-k` | boolean | false | 跳过 SSL 证书验证 |
 | `--help` | `-h` | - | - | 显示帮助 |
 | `--version` | `-v` | - | - | 显示版本 |
 
@@ -44,6 +45,9 @@ websearch "React best practices" -f markdown
 
 # 深度搜索
 websearch "machine learning" -c 10 -f table --type deep
+
+# 跳过 SSL 证书验证（适用于代理环境）
+websearch "test query" --insecure
 ```
 
 ### 输出格式
