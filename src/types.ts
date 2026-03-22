@@ -6,6 +6,7 @@ export interface SearchOptions {
   count: number;
   format: OutputFormat;
   type: SearchType;
+  insecure: boolean;
 }
 
 export interface SearchResult {

@@ -53,12 +53,14 @@ async function run(argv: string[]): Promise<void> {
     .option('-c, --count <number>', '返回结果数量 (1-20)', parseCount, DEFAULT_COUNT)
     .option('-f, --format <format>', '输出格式 (json/markdown/table)', parseFormat, 'json')
     .option('-t, --type <type>', '搜索类型 (auto/fast/deep)', parseType, 'auto')
-    .action(async (query: string, options: { count: number; format: OutputFormat; type: SearchType }) => {
+    .option('-k, --insecure', '跳过 SSL 证书验证', false)
+    .action(async (query: string, options: { count: number; format: OutputFormat; type: SearchType; insecure: boolean }) => {
       const searchOptions: SearchOptions = {
         query: query.trim(),
         count: options.count,
         format: options.format,
-        type: options.type
+        type: options.type,
+        insecure: options.insecure
       };
 
       if (!searchOptions.query) {
@@ -107,6 +109,11 @@ async function executeSearch(options: SearchOptions): Promise<void> {
 }
 
 async function searchWeb(options: SearchOptions): Promise<SearchResult[]> {
+  // 跳过 SSL 证书验证
+  if (options.insecure) {
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+  }
+
   const request: McpRequest = {
     jsonrpc: '2.0',
     id: 1,
