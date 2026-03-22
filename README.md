@@ -1,8 +1,19 @@
 # @lyhue1991/websearch
 
-基于 Exa AI MCP 端点的网页搜索命令行工具，无需 API Key，开箱即用。
+基于 Exa AI MCP 端点的网页搜索工具，无需 API Key，开箱即用。
+
+可作为 CLI 工具或 SKILL 使用。
+
 
 ## 安装
+
+**方式一：作为 SKILL 安装**
+
+```bash
+npx skills add lyhue1991/websearch
+```
+
+**方式二：作为 CLI 工具安装**
 
 ```bash
 npm install -g @lyhue1991/websearch
