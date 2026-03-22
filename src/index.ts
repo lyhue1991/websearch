@@ -90,9 +90,111 @@ function handleError(error: unknown): never {
   process.exit(1);
 }
 
-// 占位函数，后续 Task 实现
 async function executeSearch(options: SearchOptions): Promise<void> {
-  console.log('搜索功能待实现', options);
+  const spinner = options.format !== 'json' && process.stderr.isTTY
+    ? ora({ text: '正在搜索...', stream: process.stderr }).start()
+    : undefined;
+
+  try {
+    const results = await searchWeb(options);
+    spinner?.stop();
+    const output = formatResults(results, options.format);
+    process.stdout.write(`${output}\n`);
+  } catch (error) {
+    spinner?.fail('搜索失败');
+    throw error;
+  }
+}
+
+async function searchWeb(options: SearchOptions): Promise<SearchResult[]> {
+  const request: McpRequest = {
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'tools/call',
+    params: {
+      name: 'web_search_exa',
+      arguments: {
+        query: options.query,
+        type: options.type,
+        numResults: options.count
+      }
+    }
+  };
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+  try {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json, text/event-stream'
+      },
+      body: JSON.stringify(request),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new CliError(`搜索错误 (${response.status}): ${errorText}`);
+    }
+
+    const responseText = await response.text();
+    return parseMcpResponse(responseText);
+  } catch (error) {
+    clearTimeout(timeoutId);
+
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new CliError('搜索请求超时，请稍后重试。');
+    }
+
+    throw error;
+  }
+}
+
+function parseMcpResponse(responseText: string): SearchResult[] {
+  const lines = responseText.split('\n');
+
+  for (const line of lines) {
+    if (line.startsWith('data: ')) {
+      const data: McpResponse = JSON.parse(line.substring(6));
+
+      if (data.result?.content?.[0]?.text) {
+        return parseSearchResults(data.result.content[0].text);
+      }
+    }
+  }
+
+  return [];
+}
+
+function parseSearchResults(text: string): SearchResult[] {
+  const results: SearchResult[] = [];
+
+  const blocks = text.split(/\n\n+/);
+
+  for (const block of blocks) {
+    const titleMatch = block.match(/Title:\s*(.+)/);
+    const urlMatch = block.match(/URL:\s*(.+)/);
+    const contentMatch = block.match(/Content:\s*([\s\S]+?)(?=\n[A-Z][a-z]+:|$)/);
+
+    if (titleMatch && urlMatch) {
+      results.push({
+        title: titleMatch[1].trim(),
+        url: urlMatch[1].trim(),
+        snippet: contentMatch?.[1]?.trim()
+      });
+    }
+  }
+
+  return results;
+}
+
+function formatResults(results: SearchResult[], format: OutputFormat): string {
+  return JSON.stringify(results, null, 2);
 }
 
 run(process.argv);
